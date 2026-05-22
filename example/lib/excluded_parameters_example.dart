@@ -6,7 +6,7 @@ void main() {
     DialogReportMode(),
     [
       //EmailManualHandler(["recipient@email.com"]),
-      ToastHandler(),
+      // ToastHandler(),
       HttpHandler(
         HttpRequestType.post,
         Uri.parse('https://jsonplaceholder.typicode.com/posts'),

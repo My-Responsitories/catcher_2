@@ -6,7 +6,7 @@ void main() {
     DialogReportMode(),
     [
       ConsoleHandler(),
-      ToastHandler(),
+      // ToastHandler(),
     ],
     filterFunction: (report) {
       if (report.error is ArgumentError) {

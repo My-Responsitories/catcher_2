@@ -6,7 +6,7 @@ void main() {
     SilentReportMode(),
     [
       ConsoleHandler(),
-      ToastHandler(),
+      // ToastHandler(),
     ],
     reportOccurrenceTimeout: 30000,
   );

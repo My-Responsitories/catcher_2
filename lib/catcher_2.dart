@@ -9,7 +9,6 @@ export 'package:catcher_2/handlers/http_handler.dart';
 export 'package:catcher_2/handlers/sentry_handler.dart';
 export 'package:catcher_2/handlers/slack_handler.dart';
 export 'package:catcher_2/handlers/snackbar_handler.dart';
-export 'package:catcher_2/handlers/toast_handler.dart';
 export 'package:catcher_2/mode/dialog_report_mode.dart';
 export 'package:catcher_2/mode/page_report_mode.dart';
 export 'package:catcher_2/mode/report_mode_action_confirmed.dart';
