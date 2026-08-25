@@ -24,8 +24,8 @@ class Catcher2 {
     this.reportOccurrenceTimeout = const Duration(seconds: 3),
   }) {
     assert(instance == null);
-    Catcher2.logger =
-        logger ?? Logger(filter: ProductionFilter(), printer: PrettyLogPrinter());
+    Catcher2.logger = logger ??
+        Logger(filter: ProductionFilter(), printer: PrettyLogPrinter());
     Catcher2.instance = this;
 
     _configure();
@@ -64,12 +64,12 @@ class Catcher2 {
     'environment': kReleaseMode
         ? 'Release'
         : kProfileMode
-        ? 'Profile'
-        : 'Debug',
+            ? 'Profile'
+            : 'Debug',
     'abi': Abi.current().toString(),
   };
 
-  final Map<Object, DateTime> _reportsOccurrenceMap = {};
+  final Map<String, DateTime> _reportsOccurrenceMap = {};
 
   static Catcher2? instance;
   static late final Logger logger;
@@ -93,28 +93,31 @@ class Catcher2 {
     }
   }
 
+  void _flutterHandler(FlutterErrorDetails details) =>
+      _reportError(details.exception, details.stack, errorDetails: details);
+
+  bool _platformHandler(Object error, StackTrace stackTrace) {
+    _reportError(error, stackTrace);
+    return true;
+  }
+
+  void _isolateHandler(Object pair) => _reportError(
+        (pair as List<dynamic>).first.toString(),
+        pair.last.toString(),
+      );
+
   void _setupErrorHooks() {
     // FlutterError.onError catches SYNCHRONOUS errors for all platforms
-    FlutterError.onError = (details) =>
-        _reportError(details.exception, details.stack, errorDetails: details);
+    FlutterError.onError = _flutterHandler;
 
     // PlatformDispatcher.instance.onError catches ASYNCHRONOUS errors, but it
     // currently does not work for Web, most likely due to this issue:
     // https://github.com/flutter/flutter/issues/100277
-    PlatformDispatcher.instance.onError = (error, stack) {
-      _reportError(error, stack);
-      return true;
-    };
+    PlatformDispatcher.instance.onError = _platformHandler;
 
     // Web doesn't have Isolate error listener support
     Isolate.current.addErrorListener(
-      RawReceivePort((pair) {
-        final isolateError = pair as List<dynamic>;
-        _reportError(
-          isolateError.first.toString(),
-          isolateError.last.toString(),
-        );
-      }, kDebugMode ? 'Catcher2' : '').sendPort,
+      RawReceivePort(_isolateHandler, kDebugMode ? 'Catcher2' : '').sendPort,
     );
   }
 
@@ -251,10 +254,12 @@ class Catcher2 {
 
   void _loadWindowsParameters(WindowsDeviceInfo windowsDeviceInfo) {
     try {
-      deviceParameters['computerName'] = windowsDeviceInfo.computerName;
       deviceParameters['numberOfCores'] = windowsDeviceInfo.numberOfCores;
       deviceParameters['systemMemoryInMegabytes'] =
           windowsDeviceInfo.systemMemoryInMegabytes;
+      deviceParameters['buildNumber'] = windowsDeviceInfo.buildNumber;
+      deviceParameters['displayVersion'] = windowsDeviceInfo.displayVersion;
+      deviceParameters['productName'] = windowsDeviceInfo.productName;
     } catch (exception) {
       logger.w('Load Windows parameters failed', error: exception);
     }
@@ -276,7 +281,8 @@ class Catcher2 {
       deviceParameters['manufacturer'] = androidDeviceInfo.manufacturer;
       deviceParameters['model'] = androidDeviceInfo.model;
       deviceParameters['product'] = androidDeviceInfo.product;
-      deviceParameters['supportedAbis'] = androidDeviceInfo.supportedAbis.join(',');
+      deviceParameters['supportedAbis'] =
+          androidDeviceInfo.supportedAbis.join(',');
       deviceParameters['tags'] = androidDeviceInfo.tags;
       deviceParameters['type'] = androidDeviceInfo.type;
       deviceParameters['versionBaseOs'] = androidDeviceInfo.version.baseOS;
@@ -331,26 +337,20 @@ class Catcher2 {
   }
 
   void _handleReport(Report report, ReportHandler reportHandler) {
-    reportHandler
-        .handle(report)
-        .catchError((handlerError) {
-          logger.w('Error occurred in $reportHandler', error: handlerError);
-          return true; // Shut up warnings
-        })
-        .then((result) {
-          if (result) {
-            logger.d('$reportHandler successfully reported an error');
-          } else {
-            logger.w('$reportHandler failed to report an error');
-          }
-        })
-        .timeout(
-          handlerTimeout,
-          onTimeout: () {
-            logger.w(
-              '$reportHandler failed to report an error because of timeout',
-            );
-          },
-        );
+    reportHandler.handle(report).catchError((handlerError) {
+      logger.w('Error occurred in $reportHandler', error: handlerError);
+      return true; // Shut up warnings
+    }).then((result) {
+      if (result) {
+        logger.d('$reportHandler successfully reported an error');
+      } else {
+        logger.w('$reportHandler failed to report an error');
+      }
+    }).timeout(
+      handlerTimeout,
+      onTimeout: () {
+        logger.w('$reportHandler failed to report an error because of timeout');
+      },
+    );
   }
 }
