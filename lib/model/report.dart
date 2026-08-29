@@ -82,7 +82,7 @@ class Report {
       sb.write(_params2String(deviceParameters));
     }
     if (app) {
-      sb.writeln('------- DEVICE INFO -------');
+      sb.writeln('------- APP INFO -------');
       sb.write(_params2String(applicationParameters));
     }
     if (custom) {
