@@ -95,6 +95,7 @@ class Report {
   @override
   String toString() {
     return '${formatInfo()}'
+        '------- TIME -------\n$dateTime\n'
         '------- ERROR -------\n$error\n'
         '------- STACK TRACE -------\n${PrettyLogPrinter.formatStackString(stackTrace?.toString())?.join("\n")}\n';
   }
